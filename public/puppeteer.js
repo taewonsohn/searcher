@@ -8,21 +8,12 @@ const  app = express();
 const port = 3002;
 
 
-async function openGoogle(fileid) {
+async function openGoogle(userid, fileid) {
   // Launch a new browser instance
   const browser = await puppeteer.launch({ headless: false });
-
-  // Create a new page
-
-  const assetsFolderPath = path.join(__dirname,'assets/'+fileid);
-  const imageFiles = fs.readdirSync(assetsFolderPath);
-  for (const imageFile of imageFiles){
-    const page = await browser.newPage();
-
-    // Navigate to Google
-    await page.goto('https://www.google.co.kr/imghp?hl=ko');
+  const page = await browser.newPage();
+  await page.goto('https://www.google.co.kr/imghp?hl=ko');
     try {
-      // Execute the JavaScript code within the page's DOM environment
       await page.evaluate(() => {
         const element = document.getElementsByClassName('nDcEnd')[0];
         if (element) {
@@ -36,9 +27,8 @@ async function openGoogle(fileid) {
     await page.waitForSelector('input[type="file"]');
     const fileInput = await page.$('input[type="file"]');
 
-    // Upload the current image file
-    const filePath = path.join(assetsFolderPath, imageFile);
-    await fileInput.uploadFile(filePath);
+    const imagePath = path.join(__dirname,'assets/'+userid,`${fileid}.png`);
+    await fileInput.uploadFile(imagePath);
     await page.waitForNavigation();
     let url = page.url();
     let count = 0;
@@ -50,7 +40,7 @@ async function openGoogle(fileid) {
     browser.close();
     
     return url;
-  }
+  
   
   // Optionally, you can perform additional actions on the page, such as typing in the search bar or clicking on elements.
   //await page.click('div[data-ved="0ahUKEwiFzKWLqOj_AhUYA4gKHfDoAXMQhqEICAY"]');
@@ -69,13 +59,13 @@ async function openGoogle(fileid) {
 
 app.use(function(req, res, next) {
   res.header("Access-Control-Allow-Origin", "*"); // 모든 도메인에서 접근 가능하도록 설정
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With,file-id, Content-Type, Accept, image-count, Access-Control-Allow-Origin");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With,file-id,user-id, Content-Type, Accept, image-count, Access-Control-Allow-Origin");
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); // Add the OPTIONS method
   next();
 });
 app.get('/', async (req, res) => {
   try {
-    const response = await openGoogle(req.headers['file-id']); // Assuming openGoogle() returns a Promise with the desired response
+    const response = await openGoogle(req.headers['user-id'],req.headers['file-id']); // Assuming openGoogle() returns a Promise with the desired response
     res.send(response);
     console.log(response);
   } catch (error) {

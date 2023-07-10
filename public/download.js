@@ -6,6 +6,7 @@ const path = require('path');
 const app = express();
 const port = 3001;
 
+const { uploadFile, downloadFile } = require('../s3');
 const assetFolderPath = 'public/assets';
 
 function deleteFolderRecursive(folderPath) {
@@ -30,7 +31,7 @@ const upload = multer({ dest: 'public/assets/' });
 
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*"); // 모든 도메인에서 접근 가능하도록 설정
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, file-id,image-count, Access-Control-Allow-Origin");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, user-id, file-id,image-count, Access-Control-Allow-Origin");
     res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); // Add the OPTIONS method
     next();
 });
@@ -42,16 +43,18 @@ app.post('/save-image', upload.single('image'), (req, res) => {
       res.status(400).send('No image file found.');
       return;
     }
-    console.log("req:  "+req.file.path);
-    const imageCount = req.headers['image-count'];
-    const fileid = req.headers['file-id']+'/';
-    console.log("fileid  "+fileid);
-    const newFileName = `test${imageCount}.png`;
-    const newFolderPath = path.join(__dirname,'assets/',fileid);
+    const fileid = req.headers['file-id'];
+    const userid = req.headers['user-id']+'/';
+    
+    console.log("user id :  "+userid);
+    const newFileName = `${fileid}.png`;
+    const newFolderPath = path.join(__dirname,'assets/',userid);
   const newFilePath = path.join(newFolderPath, newFileName);
   try {
     fs.mkdirSync(newFolderPath, { recursive: true });
     fs.writeFileSync(newFilePath, fs.readFileSync(req.file.path));
+    const FILE = {path:newFilePath,filename:userid+fileid+'.png'};
+    const result = uploadFile(FILE);
     console.log('Image saved successfully.');
     console.log("filepath:"+req.file.path);
     // Unlink the temporary file

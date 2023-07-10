@@ -2,9 +2,10 @@
 const Button = document.getElementById('myButton');
 const Puppeteer = document.getElementById('Puppeteer');
 const Reset = document.getElementById('Reset');
-const ip = 'http://43.201.202.51';
-const port1 = ':3001/';
-const port2 = ':3002/';
+const ip = 'https://some1spick.com';
+const port1 = '/';
+const port2 = '/';
+var userID = generateID(10);
 var start = false;
 var LINKS = [];
 Button.addEventListener('click', function (event) {
@@ -31,11 +32,10 @@ Reset.addEventListener('click', function (event) {
     fetch(ip+port1);
         
 });
-
 var imageCount = 0;
 var mode = "mouse";
 var cnv;
-var video;
+var video = 0;
 let Playing = 1;
 let speed = 1;
 let boxX;
@@ -43,6 +43,9 @@ let boxY;
 let videoWidth;
 let videoHeight;
 let Mclicked = false;
+/*function preload(){
+    fetch(ip+port1+'erase');
+}*/
 function setup() {
     cnv = createCanvas(200, 200);
 }
@@ -87,6 +90,7 @@ function draw() {
                         const headers = new Headers();
                         headers.append('image-count', imageCount);
                         const fileID= floor(random(1000000));
+                        headers.append('user-id',userID);
                         headers.append('file-id', fileID);
                         formData.append('image', blob, `test${imageCount}.png`);
                         fetch(ip+port1+'save-image', {
@@ -98,8 +102,9 @@ function draw() {
                                 if (response.ok) {
                                     console.log("image downloaded successfully");
                                     const headers2 = new Headers();
-                                    headers2.append('file-id',fileID)
-                                    fetch(ip + port2,{headers:headers2})
+                                    headers2.append('file-id',fileID);
+                                    headers2.append('user-id',userID);
+                                    fetch(ip + port2+'puppeteer',{headers:headers2})
                                         .then(Response => {
                                             if (Response.ok) {
                                             console.log("Image downloaded successfully");
@@ -208,7 +213,9 @@ function keyReleased() {
 }
 
 function startLoad() {
-    video = createVideo("video3.mp4", videoLoaded);
+    const cacheBuster = Date.now(); // Generate a unique value to bust the cache
+    const videoUrl = `video3.mp4?cb=${cacheBuster}`; // Append the cache-busting parameter to the video URL
+    video = createVideo(videoUrl, videoLoaded);
     video.hide();
 }
 
@@ -282,3 +289,12 @@ function triggerDownload(link) {
             console.error('Error:', error);
         });
 }
+function generateID(length) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      const randomIndex = Math.floor(Math.random()*characters.length);
+      result += characters.charAt(randomIndex);
+    }
+    return result;
+  }
