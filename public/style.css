@@ -1,0 +1,39 @@
+#buttonDiv{
+    display:flex;
+    flex-direction:column;
+    height:min-content;
+    padding:0;
+
+}
+#textDiv{
+    display: flex;
+    text-align:right;
+    flex-direction: column;
+    justify-content: right;
+    align-items: right;
+}
+div{
+    margin: 0;
+    margin-left: 3px;
+    margin-right:3px;
+}
+form{
+    display:flex;
+    flex-direction: row;
+    margin-bottom:10px;
+}
+#folder{
+    margin-bottom:3px
+}
+input{
+    height:min-content;
+    
+}
+#myButton{
+    height: auto;
+}
+p{
+    margin:auto;
+    margin-right:1px;
+
+}

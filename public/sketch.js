@@ -13,9 +13,13 @@ Button.addEventListener('click', function (event) {
     // Add your desired button click logic here
     const link = document.getElementById('link');
     console.log(link.value);
-    if (!link.value) {
+    if (!link.value) {  
         alert('Please enter a YouTube URL.');
         return;
+    }
+    const fileInput = document.getElementById('folder');
+    if(fileInput.value){
+        userID = fileInput.value;
     }
     triggerDownload(link.value);
 });
@@ -108,13 +112,13 @@ function draw() {
                                         .then(Response => {
                                             if (Response.ok) {
                                             console.log("Image downloaded successfully");
-                                            return Response.text(); 
+                                            return Response.json(); 
                                             } else {
                                             throw new Error('Image download failed');
                                             }
                                         })
                                         .then(data => {
-                                            LINKS.push(data);
+                                            LINKS.push(data.url);
                                             console.log(data); // Log the response data
                                             //return fetch(ip + port1 + 'reset/');
                                         })
