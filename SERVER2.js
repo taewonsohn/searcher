@@ -7,6 +7,8 @@ const multer = require('multer');
 const path = require('path');
 const puppeteer = require('puppeteer');
 const app = express();
+const chatGpt = require('./chatgpt');
+
 
 const port = 3000; 
 
@@ -145,15 +147,20 @@ fs.readdir(assetFolderPath, (err, files) => {
 });
   });
 app.get('/erase',(req,res)=>{
-  fs.unlink('public/video3.mp4', (err) => {
-    if (err) {
-      console.error('Error deleting the file:', err);
-      // Handle the error accordingly
-    } else {
-      console.log('File deleted successfully');
-      // Proceed with further actions
-    }
-  })
+  if(fs.existsSync('public/video3.mp4')){
+    fs.unlink('public/video3.mp4', (err) => {
+      if (err) {
+        console.error('Error deleting the file:', err);
+        // Handle the error accordingly
+      } else {
+        console.log('File deleted successfully');
+        // Proceed with further actions
+      }
+    })
+  }else{
+    console.log("video.mp4 doesn't exist");
+  }
+ 
 });
 app.get('/download', (req, res) => {
 
@@ -167,33 +174,52 @@ app.get('/download', (req, res) => {
     if (!ytdl.validateURL(url)) {
       return res.status(400).send('Invalid YouTube URL.');
     }
-    fs.unlink('public/video3.mp4', (err) => {
+    const Path= 'C:/puppeteer/public/video3.mp4';
+    fs.access(Path, fs.F_OK, (err) => {
+      if (err) {
+        console.error(err)
+        ytdl(url)
+        .pipe(fs.createWriteStream('public/video3.mp4'))
+        .on('finish', () => {
+            res.send('Successful!');
+            console.log('Download Successful');
+
+        })
+        .on('error', (err) => {
+            console.error('Error:', err);
+            res.status(500).send('An error occurred during the download process.');
+        });
+        return;
+      }
+      fs.unlink('public/video3.mp4', (err) => {
         if (err) {
           console.error('Error deleting the file:', err);
           // Handle the error accordingly
         } else {
           console.log('File deleted successfully');
           // Proceed with further actions
-          
-        }
-        ytdl(url)
+          ytdl(url)
           .pipe(fs.createWriteStream('public/video3.mp4'))
           .on('finish', () => {
               res.send('Successful!');
               console.log('Download Successful');
+
           })
           .on('error', (err) => {
               console.error('Error:', err);
               res.status(500).send('An error occurred during the download process.');
           });
+        }
       });
-          
+     
+    });
       
     
       
       
       
 });
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
@@ -230,20 +256,31 @@ async function openGoogle(userid, fileid) {
         count++;
         url = page.url();
       }
+      const link = await page.evaluate(() => {
+        const resultElement = document.querySelector('.Vd9M6.xuQ19b > a');
+        return resultElement.href;
+        });
+        await page.goto(link);
+        const textElements = await page.evaluate(() => {
+          return Array.from(document.querySelectorAll('body *'), element => ({
+            text: element.textContent,
+            fontSize: window.getComputedStyle(element).getPropertyValue('font-size')
+          }));
+        });
+        const thresholdFontSize = 16; // 폰트 크기가 큰 텍스트를 필터링하는 임계값
+        const filteredTextElements = textElements.filter(element => parseFloat(element.fontSize) > thresholdFontSize);
+        const filteredTexts = filteredTextElements.filter(item => item.text).map(item => item.text);
+        const resultString = filteredTexts.join(" ");
+        console.log(resultString);
+      
+        const response = await chatGpt(resultString+'\n위는 상품페이지에 있는 텍스트야. 상품명을 추출해줘');
+        //console.log(response);
+        console.log(response.content);
+      
       browser.close();
       
-      return url;
+      return {url:url,product:response.content};
     
     
-    // Optionally, you can perform additional actions on the page, such as typing in the search bar or clicking on elements.
-    //await page.click('div[data-ved="0ahUKEwiFzKWLqOj_AhUYA4gKHfDoAXMQhqEICAY"]');
-    // Wait for a few seconds (optional)
-    
-  
-  
-    // Wait for the visual search results to load
-   
-  
-    // Close the browser
-    //await browser.close();
+ 
   }
